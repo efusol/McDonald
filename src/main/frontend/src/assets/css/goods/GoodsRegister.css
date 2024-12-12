@@ -63,6 +63,10 @@
   transition: background-color 0.3s;
 }
 
+.btn.top {
+  margin-bottom: 10px;
+}
+
 .btn:hover {
   background-color: #e0a800;
 }

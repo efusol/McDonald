@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../../assets/css/common/Header.css';
 import { useSelector, useDispatch } from 'react-redux';
 import { adminLogin, userLogin, userLogout } from '../../store/member';
@@ -10,6 +10,7 @@ function Header() {
   const [borderBottom, setBorderBottom] = useState('none');
 
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user, admin } = useSelector((state) => state.member);
 
   const handleMouseEnter = () => {
@@ -25,6 +26,8 @@ function Header() {
   const handleLogout = () => {
     sessionStorage.removeItem('loginedMemberVo');
     dispatch(userLogout());
+    alert('로그아웃 되었습니다.')
+    navigate('/');
   };
 
   useEffect(() => {
@@ -99,7 +102,7 @@ function Header() {
                 <li><Link to="/goodsregister">상품등록</Link></li>
               )}
               <li><Link to="/mypage">마이페이지</Link></li>
-              <li><Link onClick={handleLogout}>로그아웃</Link></li>
+              <li><a onClick={handleLogout}>로그아웃</a></li>
             </>
           )}
         </ul>

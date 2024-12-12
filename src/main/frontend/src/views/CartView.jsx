@@ -1,64 +1,81 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import '../assets/css/pay/Cart.css'
 import { useNavigate } from 'react-router-dom';
+import { userLogin } from '../store/member';
 
 const CartView = () => {
   const [cartItems, setCartItems] = useState([]);
   const [totalAmount, setTotalAmount] = useState(0);
   const { user } = useSelector((state) => state.member);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const hasRun = useRef(false);
 
   useEffect(() => {
-      const fetchCartItems = async () => {
-        if (!user) return;
+    if (hasRun.current) return;
+    hasRun.current = true;
 
-        try {
-          const response = await axios.get(`${import.meta.env.VITE_API_URL}/goods/cartList`, {
-            params: { m_no: user.m_no },
-          });
-          console.log(response.data);
-          const items = Array.isArray(response.data) ? response.data : [];
-          setCartItems(items);
-          calculateTotal(items);
-        } catch (error) {
-          console.error('Error fetching cart items:', error);
-        }
-      };
-      fetchCartItems();
+    const storedMember = sessionStorage.getItem('loginedMemberVo');
+
+    if (!storedMember) {
+      alert('로그인이 필요합니다.');
+      navigate('/member/login', { replace: true });
+      return;
+    }
+
+    const memberData = JSON.parse(storedMember);
+    dispatch(userLogin(memberData));
+
+    const fetchCartItems = async () => {
+      if (!user) return;
+
+      try {
+        const response = await axios.get(`${import.meta.env.VITE_API_URL}/goods/cartList`, {
+          params: { m_no: user.m_no },
+        });
+        console.log(response.data);
+        const items = Array.isArray(response.data) ? response.data : [];
+        setCartItems(items);
+        calculateTotal(items);
+      } catch (error) {
+        console.error('Error fetching cart items:', error);
+      }
+    };
+    fetchCartItems();
   }, [user]);
 
   const updateQuantity = async (itemId, quantity) => {
     if (quantity < 1) return;
 
     try {
-        await axios.post(`${import.meta.env.VITE_API_URL}/goods/updateCartQuantity`, {
-            g_no: itemId,
-            c_quantity: quantity,
-            m_no: user.m_no,
-        });
-        setCartItems((prevItems) =>
-            prevItems.map((item) => (item.g_no === itemId ? { ...item, c_quantity: quantity } : item))
-        );
-        calculateTotal(cartItems);
+      await axios.post(`${import.meta.env.VITE_API_URL}/goods/updateCartQuantity`, {
+        g_no: itemId,
+        c_quantity: quantity,
+        m_no: user.m_no,
+      });
+      setCartItems((prevItems) =>
+        prevItems.map((item) => (item.g_no === itemId ? { ...item, c_quantity: quantity } : item))
+      );
+      calculateTotal(cartItems);
     } catch (error) {
-        console.error('Error updating quantity:', error);
+      console.error('Error updating quantity:', error);
     }
-};
+  };
 
-const removeItem = async (itemId) => {
-  try {
+  const removeItem = async (itemId) => {
+    try {
       await axios.delete(`${import.meta.env.VITE_API_URL}/goods/removeFromCart`, {
-          params: { g_no: itemId, m_no: user.m_no },
+        params: { g_no: itemId, m_no: user.m_no },
       });
       const updatedItems = cartItems.filter((item) => item.g_no !== itemId);
       setCartItems(updatedItems);
       calculateTotal(updatedItems);
-  } catch (error) {
+    } catch (error) {
       console.error('Error removing item:', error);
-  }
-};
+    }
+  };
 
   const calculateTotal = (items) => {
     const total = items.reduce((sum, item) => sum + item.g_price * item.c_quantity, 0);

@@ -1,6 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import '../assets/css/goods/GoodsRegister.css';
+import { useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { adminLogin, userLogin } from '../store/member';
 
 const GoodsRegister = () => {
   const [formData, setFormData] = useState({
@@ -15,9 +18,29 @@ const GoodsRegister = () => {
   });
 
   const [options, setOptions] = useState([]);
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const hasRun = useRef(false);
 
   useEffect(() => {
-    // 처음 로드 시에 초기 카테고리에 맞는 옵션을 설정합니다.
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    const storedMember = sessionStorage.getItem('loginedMemberVo');
+    const isAdmin = sessionStorage.getItem('isAdmin');
+
+    if (storedMember) {
+      const memberData = JSON.parse(storedMember);
+      dispatch(userLogin(memberData));
+      dispatch(adminLogin(isAdmin === 'true'));
+    }
+
+    if (!storedMember) {
+      alert('로그인이 필요합니다.');
+      navigate('/member/login', { replace: true });
+      return;
+    }
+
     updateOptions('burger');
   }, []);
 
@@ -163,7 +186,7 @@ const GoodsRegister = () => {
             <input type="text" name="g_price" placeholder="가격" value={formData.g_price} onChange={handleChange} />
             <input type="file" name="g_photo" onChange={handleChange} />
             <div>
-              <button className="btn" type="submit">전송</button>
+              <button className="btn top" type="submit">전송</button>
               <button
                 className="btn"
                 type="reset"

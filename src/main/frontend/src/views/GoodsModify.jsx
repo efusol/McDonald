@@ -1,12 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch } from 'react-redux';
+import { adminLogin, userLogin } from '../store/member';
 
 const GoodsModify = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const gNo = params.get('g_no'); // URL에서 g_no 가져오기
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const hasRun = useRef(false);
 
   const [formData, setFormData] = useState({
     g_category: 'burger',
@@ -22,6 +26,24 @@ const GoodsModify = () => {
   const [options, setOptions] = useState([]);
 
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    const storedMember = sessionStorage.getItem('loginedMemberVo');
+    const isAdmin = sessionStorage.getItem('isAdmin');
+
+    if (storedMember) {
+      const memberData = JSON.parse(storedMember);
+      dispatch(userLogin(memberData));
+      dispatch(adminLogin(isAdmin === 'true'));
+    }
+
+    if (!storedMember) {
+      alert('로그인이 필요합니다.');
+      navigate('/member/login', { replace: true });
+      return;
+    }
+
     const fetchProductData = async () => {
       try {
         const response = await axios.get(`${import.meta.env.VITE_API_URL}/goods/detail/${gNo}`);
@@ -168,7 +190,7 @@ const GoodsModify = () => {
             <input type="text" name="g_price" placeholder="가격" value={formData.g_price} onChange={handleChange} />
             <input type="file" name="g_photo" onChange={handleChange} />
             <div>
-              <button className="btn" type="submit">수정</button>
+              <button className="btn top" type="submit">수정</button>
               <button
                 className="btn"
                 type="reset"

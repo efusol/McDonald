@@ -1,26 +1,38 @@
 import React, { useEffect, useState } from "react";
-import { shallowEqual, useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { GiAchievement, GiHamburger, GiAbstract007 } from "react-icons/gi";
 import axios from "axios";
 import "../../assets/css/mypage/MyInfo.css";
+import { userLogin } from "../../store/member";
 
 const MyInfo = () => {
+  const dispatch = useDispatch();
   const user = useSelector((state) => state.member.user);
-  const [userState, setUserState] = useState(user);
+  const [userState, setUserState] = useState(user || null);
   const [orderCount, setOrderCount] = useState(0);
 
+  // Redux 상태 복원 및 sessionStorage를 활용한 로그인 정보 복구
   useEffect(() => {
-    console.log("현재 Redux user 상태:", JSON.stringify(user));
-    setUserState(user); 
-  }, [user]);
+    if (!user) {
+      const storedMember = sessionStorage.getItem("loginedMemberVo");
+      if (storedMember) {
+        const memberData = JSON.parse(storedMember);
+        dispatch(userLogin(memberData)); // Redux 상태 복구
+        setUserState(memberData); // 로컬 상태 복구
+      }
+    } else {
+      setUserState(user); // Redux에서 가져온 유저 설정
+    }
+  }, [user, dispatch]);
 
+  // 주문 및 포인트 정보 가져오기
   useEffect(() => {
     const fetchOrdersAndPoint = async () => {
-      if (user?.m_no) {
+      if (userState?.m_no) {
         try {
           const response = await axios.get(
             `${import.meta.env.VITE_API_URL}/order/total-orders-and-point`,
-            { params: { m_no: user.m_no } }
+            { params: { m_no: userState.m_no } }
           );
           console.log("주문 수와 포인트:", response.data);
           setOrderCount(response.data.totalOrders);
@@ -33,23 +45,22 @@ const MyInfo = () => {
         }
       }
     };
-  
-    fetchOrdersAndPoint();
-  }, [user?.m_no]);
-  
 
-  // user가 로딩 중인 경우 처리
-  if (!user || Object.keys(user).length === 0) {
-    return <p>로딩 중...</p>;
+    fetchOrdersAndPoint();
+  }, [userState?.m_no]);
+
+  // 유저 정보 렌더링 조건 설정
+  if (!userState) {
+    return <div className="myinfo-container">로그인 정보를 불러오는 중...</div>;
   }
 
   return (
     <div className="myinfo-container">
       <h1 className="myinfo-header">내 정보</h1>
       <div className="myinfo-details">
-        <div className="myinfo-name">{user.m_name || "이름 없음"}</div>
+        <div className="myinfo-name">{userState?.m_name || "이름 없음"}</div>
         <div className="myinfo-point">
-          포인트: <span>{userState.point || 0}</span>P
+          포인트: <span>{userState?.point || 0}</span>P
         </div>
       </div>
       <div className="myinfo-achievements">

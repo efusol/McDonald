@@ -2,7 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import axios from 'axios';
 import { useDispatch, useSelector } from 'react-redux';
 import '../assets/css/pay/PayView.css';
-import { updateUser } from '../store/member';
+import { updateUser, userLogin } from '../store/member';
+import { useNavigate } from 'react-router-dom';
 
 const PayView = () => {
   const [userInfo, setUserInfo] = useState({
@@ -21,8 +22,27 @@ const PayView = () => {
   const addressRef = useRef(null);
   const addressSubRef = useRef(null);
   const user = useSelector((state) => state.member.user);
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const pointsInputRef = useRef(null);
+  const hasRun = useRef(false);
+
+  useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    const storedMember = sessionStorage.getItem('loginedMemberVo');
+
+    if (!storedMember) {
+      alert('로그인이 필요합니다.');
+      navigate('/member/login', { replace: true });
+      return;
+    }
+
+      const memberData = JSON.parse(storedMember);
+      dispatch(userLogin(memberData));
+  }, [user]);
+  
 
   useEffect(() => {
     if (user && user.m_no) {

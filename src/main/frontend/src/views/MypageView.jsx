@@ -1,16 +1,34 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import '../assets/css/mypage/Mypage.css';
+import { useDispatch } from 'react-redux';
+import { userLogin } from '../store/member';
 
 const MypageView = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const hasRun = useRef(false);
 
   useEffect(() => {
+    if (hasRun.current) return;
+    hasRun.current = true;
+
+    const storedMember = sessionStorage.getItem('loginedMemberVo');
+
+    if (!storedMember) {
+      alert('로그인이 필요합니다.');
+      navigate('/member/login', { replace: true });
+      return;
+    }
+
+    const memberData = JSON.parse(storedMember);
+    dispatch(userLogin(memberData));
+
     if (location.pathname === '/mypage') {
       navigate('/mypage/myinfo');
     }
-  }, [location.pathname, navigate]);
+  }, [location.pathname, navigate, dispatch]);
 
   return (
     <div id="mypage">
